@@ -460,6 +460,22 @@
             }
         ];
 
+        /* ================= FITUR ACAK PILIHAN GANDA (AUTO-SHUFFLE) ================= */
+        // Fungsi ini akan mengacak posisi A, B, C, D untuk setiap soal secara otomatis saat halaman dimuat
+        questions.forEach(q => {
+            // 1. Simpan teks jawaban yang benar (awalnya selalu di index q.ans)
+            let correctAnswerText = q.options[q.ans]; 
+            
+            // 2. Acak urutan pilihan (options) menggunakan algoritma Fisher-Yates
+            for (let i = q.options.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [q.options[i], q.options[j]] = [q.options[j], q.options[i]];
+            }
+            
+            // 3. Cari di mana posisi jawaban benar tersebut sekarang, lalu jadikan kunci jawaban baru
+            q.ans = q.options.indexOf(correctAnswerText);
+        });
+
         /* ================= STATE APLIKASI ================= */
         let currentQuestion = 0;
         let userAnswers = new Array(questions.length).fill(null);
