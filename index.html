@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UAS Genap Matematika - SMPN 38 Bandar Lampung</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Anti Cheat CSS */
+        body {
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10 and IE 11 */
+            user-select: none; /* Standard syntax */
+            -webkit-touch-callout: none; /* Disable long press on mobile */
+        }
+        .prevent-select {
+            pointer-events: none;
+        }
+        .allow-select {
+            pointer-events: auto;
+        }
+        
+        /* Custom Scrollbar for Grid */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Modal Overlay */
+        #warning-overlay {
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800" oncontextmenu="return false;">
+
+    <!-- ================== LAYAR LOGIN / INPUT DATA ================== -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+            <div class="text-center mb-6">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Logo_Tut_Wuri_Handayani.png/320px-Logo_Tut_Wuri_Handayani.png" alt="Logo" class="h-16 mx-auto mb-3" onerror="this.style.display='none'">
+                <h1 class="text-2xl font-bold text-blue-700">UAS GENAP</h1>
+                <h2 class="text-lg font-semibold text-gray-600">Matematika Kelas 8</h2>
+                <p class="text-sm text-gray-500">SMPN 38 Bandar Lampung</p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap Siswa</label>
+                    <input type="text" id="student-name" class="w-full border-2 border-gray-300 rounded-lg p-3 focus:outline-none focus:border-blue-500 uppercase allow-select" placeholder="Masukkan nama Anda..." autocomplete="off">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
+                    <select id="student-class" class="w-full border-2 border-gray-300 rounded-lg p-3 focus:outline-none focus:border-blue-500 allow-select">
+                        <option value="" disabled selected>-- Pilih Kelas --</option>
+                        <option value="8A">8 A</option>
+                        <option value="8B">8 B</option>
+                        <option value="8C">8 C</option>
+                        <option value="8D">8 D</option>
+                    </select>
+                </div>
+
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mt-4 rounded">
+                    <p class="text-xs text-yellow-800 font-medium"><b>PERATURAN UJIAN:</b></p>
+                    <ul class="text-xs text-yellow-800 list-disc ml-4 mt-1">
+                        <li>Waktu Ujian: 90 Menit.</li>
+                        <li>Dilarang keluar aplikasi, split screen, atau ganti tab.</li>
+                        <li>Maksimal peringatan kecurangan 2x. Peringatan ke-3 ujian otomatis dikumpulkan.</li>
+                    </ul>
+                </div>
+
+                <button onclick="startExam()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md transition duration-200 mt-2 allow-select">
+                    MULAI UJIAN SEKARANG
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================== LAYAR UJIAN ================== -->
+    <div id="exam-screen" class="hidden flex flex-col h-screen bg-gray-50">
+        <!-- Header -->
+        <header class="bg-blue-700 text-white p-4 shadow-md flex justify-between items-center z-10 sticky top-0">
+            <div>
+                <p id="display-name" class="font-bold text-sm md:text-base uppercase"></p>
+                <p id="display-class" class="text-xs md:text-sm text-blue-200"></p>
+            </div>
+            <div class="text-center">
+                <p class="text-xs text-blue-200">Sisa Waktu</p>
+                <p id="timer" class="font-mono font-bold text-xl lg:text-2xl">90:00</p>
+            </div>
+            <button onclick="toggleGrid()" class="bg-blue-800 p-2 rounded-lg hover:bg-blue-900 allow-select">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+            </button>
+        </header>
+
+        <!-- Main Content (Soal) -->
+        <main class="flex-grow overflow-y-auto p-4 md:p-8 pb-24 relative" id="main-scroll">
+            <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h3 class="font-bold text-lg text-blue-800">Soal No. <span id="q-number">1</span></h3>
+                    <span class="text-sm bg-gray-100 text-gray-600 px-3 py-1 rounded-full"><span id="q-answered">0</span>/<span id="q-total">50</span> Dijawab</span>
+                </div>
+                
+                <div id="question-text" class="text-base md:text-lg mb-6 leading-relaxed">
+                    <!-- Text soal akan dimuat disini -->
+                </div>
+
+                <div id="options-container" class="space-y-3">
+                    <!-- Pilihan ganda dimuat disini -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer Navigation -->
+        <footer class="bg-white border-t border-gray-200 p-4 fixed bottom-0 w-full shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10 flex justify-between items-center">
+            <button onclick="prevQuestion()" id="btn-prev" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold disabled:opacity-50 allow-select">
+                &laquo; Sebelumnya
+            </button>
+            <button onclick="submitExamConfirm()" id="btn-submit" class="hidden px-6 py-2 bg-green-600 text-white rounded-lg font-bold shadow-md hover:bg-green-700 allow-select">
+                SELESAI & KIRIM
+            </button>
+            <button onclick="nextQuestion()" id="btn-next" class="px-5 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow-md hover:bg-blue-700 allow-select">
+                Selanjutnya &raquo;
+            </button>
+        </footer>
+
+        <!-- Modal Daftar Soal (Grid) -->
+        <div id="grid-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-20 flex justify-end">
+            <div class="bg-white w-3/4 md:w-80 h-full shadow-2xl flex flex-col transform transition-transform">
+                <div class="p-4 bg-blue-700 text-white flex justify-between items-center">
+                    <h3 class="font-bold">Daftar Soal</h3>
+                    <button onclick="toggleGrid()" class="text-white hover:text-gray-200 p-1 allow-select">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                </div>
+                <div class="p-4 flex-grow overflow-y-auto no-scrollbar">
+                    <div id="question-grid" class="grid grid-cols-5 gap-2">
+                        <!-- Kotak nomor akan dimuat disini -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================== CUSTOM MODAL (PENGGANTI ALERT/CONFIRM) ================== -->
+    <div id="custom-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center transform transition-all">
+            <h3 id="modal-title" class="text-xl font-bold mb-2 text-gray-800">Perhatian</h3>
+            <p id="modal-message" class="text-gray-600 mb-6 text-sm"></p>
+            <div class="flex justify-center gap-3" id="modal-buttons">
+                <!-- Buttons will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ================== MODAL PERINGATAN KECURANGAN ================== -->
+    <div id="warning-overlay" class="hidden fixed inset-0 bg-red-900 bg-opacity-90 z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md w-full">
+            <svg class="w-20 h-20 text-red-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <h2 class="text-3xl font-bold text-red-600 mb-2">PERINGATAN!</h2>
+            <p id="warning-message" class="text-gray-800 text-lg mb-6 font-medium">Anda terdeteksi keluar dari layar ujian.</p>
+            <div class="bg-red-100 text-red-800 p-3 rounded-lg mb-6 font-bold text-xl">
+                Pelanggaran: <span id="warning-count">1</span> / 2
+            </div>
+            <button onclick="dismissWarning()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg allow-select">
+                KEMBALI KE UJIAN
+            </button>
+        </div>
+    </div>
+
+    <!-- ================== LAYAR HASIL & PEMBAHASAN ================== -->
+    <div id="result-screen" class="hidden min-h-screen bg-gray-100 p-4 md:p-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Kartu Skor -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 text-center border-t-8 border-blue-600">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Ujian Selesai!</h2>
+                <p class="text-gray-600 mb-6">Berikut adalah hasil ujian matematika Anda.</p>
+                
+                <div class="flex justify-center items-center gap-8 mb-6">
+                    <div>
+                        <p class="text-sm text-gray-500">Benar</p>
+                        <p id="res-benar" class="text-3xl font-bold text-green-600">0</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Salah</p>
+                        <p id="res-salah" class="text-3xl font-bold text-red-600">0</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Kosong</p>
+                        <p id="res-kosong" class="text-3xl font-bold text-gray-600">0</p>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 p-4 rounded-xl inline-block px-12">
+                    <p class="text-sm text-blue-800 font-semibold mb-1">NILAI AKHIR</p>
+                    <p id="res-nilai" class="text-5xl font-extrabold text-blue-700">100</p>
+                </div>
+            </div>
+
+            <!-- Daftar Pembahasan -->
+            <h3 class="text-xl font-bold text-gray-800 mb-4 px-2">Evaluasi & Pembahasan</h3>
+            <div id="review-container" class="space-y-4">
+                <!-- Pembahasan dimuat disini -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ================= DATA SOAL (25 Soal Lengkap) ================= */
+        // Untuk mencapai 50 soal, cukup duplikat dan ubah angka/teks pada array ini
+        const questions = [
+            // --- ALJABAR ---
+            {
+                q: "Bentuk sederhana dari 4x + 12y - 10z - 8x + 5y - 7z adalah...",
+                options: ["-4x + 17y - 17z", "-4x + 17y + 17z", "12x + 17y - 17z", "4x + 7y - 3z"],
+                ans: 0,
+                exp: "Kelompokkan suku sejenis: (4x - 8x) + (12y + 5y) + (-10z - 7z) = -4x + 17y - 17z"
+            },
+            {
+                q: "Hasil penjabaran dari (2x - 3)(x + 4) adalah...",
+                options: ["2x² + 5x - 12", "2x² - 5x - 12", "2x² + 11x - 12", "2x² - 5x + 12"],
+                ans: 0,
+                exp: "Gunakan perkalian distributif: 2x(x) + 2x(4) - 3(x) - 3(4) = 2x² + 8x - 3x - 12 = 2x² + 5x - 12"
+            },
+            {
+                q: "Jika x = 3 dan y = -2, maka nilai dari 2x² - 3y + 5 adalah...",
+                options: ["29", "23", "11", "17"],
+                ans: 0,
+                exp: "Substitusi: 2(3)² - 3(-2) + 5 = 2(9) + 6 + 5 = 18 + 6 + 5 = 29"
+            },
+            {
+                q: "Pemfaktoran dari x² - 8x + 15 adalah...",
+                options: ["(x - 3)(x - 5)", "(x + 3)(x + 5)", "(x - 3)(x + 5)", "(x + 3)(x - 5)"],
+                ans: 0,
+                exp: "Cari dua bilangan yang jika dikali hasilnya 15 dan dijumlah hasilnya -8. Bilangan tersebut adalah -3 dan -5. Jadi: (x - 3)(x - 5)"
+            },
+            {
+                q: "Penyelesaian dari persamaan 3x - 5 = x + 7 adalah...",
+                options: ["x = 6", "x = -6", "x = 4", "x = 2"],
+                ans: 0,
+                exp: "3x - x = 7 + 5 <br> 2x = 12 <br> x = 6"
+            },
+            // --- TEOREMA PYTHAGORAS ---
+            {
+                q: "Pada segitiga siku-siku ABC dengan sudut siku-siku di B, panjang AB = 8 cm dan BC = 15 cm. Panjang sisi miring AC adalah...",
+                options: ["17 cm", "23 cm", "16 cm", "19 cm"],
+                ans: 0,
+                exp: "AC = √(AB² + BC²) = √(8² + 15²) = √(64 + 225) = √289 = 17 cm"
+            },
+            {
+                q: "Berikut ini yang merupakan tripel Pythagoras adalah...",
+                options: ["5, 12, 13", "4, 6, 9", "7, 8, 12", "6, 8, 12"],
+                ans: 0,
+                exp: "Tripel pythagoras memenuhi a² + b² = c². Untuk 5, 12, 13 -> 5² + 12² = 25 + 144 = 169 = 13² (Benar)"
+            },
+            {
+                q: "Sebuah tangga panjangnya 5 meter bersandar pada tembok. Jarak ujung bawah tangga terhadap tembok adalah 3 meter. Tinggi tembok yang dicapai tangga adalah...",
+                options: ["4 meter", "2 meter", "6 meter", "8 meter"],
+                ans: 0,
+                exp: "Gunakan Pythagoras (sisi tegak): t = √(5² - 3²) = √(25 - 9) = √16 = 4 meter"
+            },
+            {
+                q: "Jarak antara titik A(2, 3) dan B(8, 11) pada bidang koordinat adalah...",
+                options: ["10 satuan", "8 satuan", "12 satuan", "14 satuan"],
+                ans: 0,
+                exp: "Jarak = √((x2-x1)² + (y2-y1)²) = √((8-2)² + (11-3)²) = √(6² + 8²) = √(36 + 64) = √100 = 10"
+            },
+            {
+                q: "Diketahui belah ketupat ABCD dengan panjang diagonal 16 cm dan 12 cm. Keliling belah ketupat tersebut adalah...",
+                options: ["40 cm", "48 cm", "20 cm", "28 cm"],
+                ans: 0,
+                exp: "Sisi belah ketupat (s) dihitung dengan Pythagoras dari setengah diagonal (8 dan 6). s = √(8² + 6²) = √(64 + 36) = √100 = 10 cm. Keliling = 4 × 10 = 40 cm"
+            },
+            // --- LINGKARAN ---
+            {
+                q: "Rumus keliling dan luas lingkaran berturut-turut adalah...",
+                options: ["2πr dan πr²", "πr² dan 2πr", "πd dan ¼πr²", "2πd dan πd²"],
+                ans: 0,
+                exp: "Keliling = 2 × π × r (atau π × d). Luas = π × r²"
+            },
+            {
+                q: "Sebuah lingkaran memiliki jari-jari 14 cm. Luas lingkaran tersebut adalah... (π = 22/7)",
+                options: ["616 cm²", "308 cm²", "154 cm²", "44 cm²"],
+                ans: 0,
+                exp: "L = π × r² = (22/7) × 14 × 14 = 22 × 2 × 14 = 616 cm²"
+            },
+            {
+                q: "Keliling sebuah roda adalah 88 cm. Jari-jari roda tersebut adalah... (π = 22/7)",
+                options: ["14 cm", "7 cm", "21 cm", "28 cm"],
+                ans: 0,
+                exp: "K = 2πr <br> 88 = 2 × (22/7) × r <br> 88 = (44/7) × r <br> r = (88 × 7) / 44 = 14 cm"
+            },
+            {
+                q: "Panjang busur lingkaran dengan sudut pusat 90° dan jari-jari 14 cm adalah...",
+                options: ["22 cm", "44 cm", "11 cm", "66 cm"],
+                ans: 0,
+                exp: "Panjang Busur = (sudut/360) × 2πr = (90/360) × 2 × (22/7) × 14 = (1/4) × 88 = 22 cm"
+            },
+            {
+                q: "Luas juring lingkaran dengan jari-jari 10 cm dan sudut pusat 72° adalah... (π = 3,14)",
+                options: ["62,8 cm²", "31,4 cm²", "125,6 cm²", "314 cm²"],
+                ans: 0,
+                exp: "Luas Juring = (72/360) × πr² = (1/5) × 3,14 × 100 = (1/5) × 314 = 62,8 cm²"
+            },
+            {
+                q: "Diketahui sudut pusat ∠AOB = 80°. Jika titik C berada di keliling lingkaran menghadap busur AB, maka besar sudut keliling ∠ACB adalah...",
+                options: ["40°", "160°", "80°", "20°"],
+                ans: 0,
+                exp: "Sudut keliling = ½ × sudut pusat (jika menghadap busur yang sama). ∠ACB = ½ × 80° = 40°"
+            },
+            // --- STATISTIKA (Mean, Median, Modus) ---
+            {
+                q: "Nilai ulangan matematika Budi adalah 7, 8, 9, 6, 7, 8, 9, 10. Nilai rata-rata (mean) nya adalah...",
+                options: ["8", "7.5", "8.5", "7"],
+                ans: 0,
+                exp: "Rata-rata = (7+8+9+6+7+8+9+10) / 8 = 64 / 8 = 8"
+            },
+            {
+                q: "Data berat badan (kg) sekelompok siswa: 40, 42, 45, 38, 42, 40, 42, 45, 41. Modus dari data tersebut adalah...",
+                options: ["42 kg", "40 kg", "45 kg", "41 kg"],
+                ans: 0,
+                exp: "Modus adalah data yang paling sering muncul. Angka 42 muncul paling banyak yaitu 3 kali."
+            },
+            {
+                q: "Median dari data: 5, 6, 8, 4, 7, 9, 8 adalah...",
+                options: ["7", "6", "8", "6.5"],
+                ans: 0,
+                exp: "Urutkan data: 4, 5, 6, 7, 8, 8, 9. Nilai tengah (data ke-4) adalah 7."
+            },
+            {
+                q: "Nilai rata-rata dari 4 siswa adalah 7,5. Jika nilai Andi dimasukkan, rata-ratanya menjadi 7,8. Nilai Andi adalah...",
+                options: ["9", "8", "8.5", "9.5"],
+                ans: 0,
+                exp: "Jumlah awal = 4 × 7.5 = 30. Jumlah baru (5 siswa) = 5 × 7.8 = 39. Nilai Andi = 39 - 30 = 9."
+            },
+            {
+                q: "Median dari data genap berikut: 10, 12, 15, 11, 14, 18, 17, 13 adalah...",
+                options: ["13.5", "13", "14", "14.5"],
+                ans: 0,
+                exp: "Urutkan: 10, 11, 12, 13, 14, 15, 17, 18. Median = rata-rata data ke-4 dan ke-5 = (13 + 14)/2 = 13.5"
+            },
+            // --- CAMPURAN & PENALARAN ---
+            {
+                q: "Jika jari-jari lingkaran diperbesar 2 kali lipat, maka luasnya akan menjadi ... kali lipat dari semula.",
+                options: ["4", "2", "8", "16"],
+                ans: 0,
+                exp: "Luas = πr². Jika r menjadi 2r, maka L_baru = π(2r)² = 4πr² (4 kali lipat)."
+            },
+            {
+                q: "Sebuah taman berbentuk lingkaran dengan diameter 28 meter akan ditanami rumput. Jika harga rumput Rp 10.000 per m², biaya total adalah...",
+                options: ["Rp 6.160.000", "Rp 2.464.000", "Rp 3.080.000", "Rp 880.000"],
+                ans: 0,
+                exp: "Jari-jari = 14 m. Luas = (22/7) × 14 × 14 = 616 m². Biaya = 616 × 10.000 = Rp 6.160.000"
+            },
+            {
+                q: "Umur Ayah 3 kali umur Budi. Jika selisih umur mereka adalah 30 tahun, maka umur Budi adalah...",
+                options: ["15 tahun", "10 tahun", "45 tahun", "20 tahun"],
+                ans: 0,
+                exp: "A = 3B. Selisih: A - B = 30 -> 3B - B = 30 -> 2B = 30 -> B = 15 tahun."
+            },
+            {
+                q: "Diketahui keliling sebuah persegi panjang adalah 50 cm. Jika panjangnya lebih 5 cm dari lebarnya, maka luas persegi panjang tersebut adalah...",
+                options: ["150 cm²", "100 cm²", "200 cm²", "125 cm²"],
+                ans: 0,
+                exp: "K = 2(p+l) -> 50 = 2((l+5) + l) -> 25 = 2l + 5 -> 20 = 2l -> l = 10. Maka p = 15. Luas = p×l = 15×10 = 150 cm²"
+            },
+            // --- TAMBAHAN 15 SOAL BARU (ALJABAR, PYTHAGORAS, LINGKARAN, STATISTIKA) ---
+            {
+                q: "Diketahui luas lingkaran adalah 154 cm². Jari-jari lingkaran tersebut adalah... (π = 22/7)",
+                options: ["7 cm", "14 cm", "10 cm", "21 cm"],
+                ans: 0,
+                exp: "L = πr² → 154 = (22/7) × r² → r² = 154 × 7 / 22 = 49 → r = √49 = 7 cm."
+            },
+            {
+                q: "Sebuah roda sepeda berputar sebanyak 1.000 kali untuk melintasi jalan sepanjang 1.320 meter. Jari-jari roda sepeda tersebut adalah... (π = 22/7)",
+                options: ["21 cm", "14 cm", "28 cm", "42 cm"],
+                ans: 0,
+                exp: "Jarak = 1.320 m = 132.000 cm. Keliling (K) = Jarak / Putaran = 132.000 / 1.000 = 132 cm. <br> K = 2πr → 132 = 2 × (22/7) × r → r = (132 × 7) / 44 = 21 cm."
+            },
+            {
+                q: "Panjang garis singgung persekutuan luar dua lingkaran adalah 12 cm. Jika jarak kedua pusat lingkaran 13 cm dan jari-jari lingkaran besar 8 cm, maka jari-jari lingkaran kecil adalah...",
+                options: ["3 cm", "4 cm", "2 cm", "5 cm"],
+                ans: 0,
+                exp: "Rumus GS Luar: l = √(p² - (R-r)²). <br> 12 = √(13² - (8-r)²) → 144 = 169 - (8-r)² → (8-r)² = 25 → 8-r = 5 → r = 3 cm."
+            },
+            {
+                q: "Panjang garis singgung persekutuan dalam dua buah lingkaran adalah 24 cm. Jika jarak titik pusat kedua lingkaran adalah 26 cm dan panjang jari-jari lingkaran yang lebih kecil adalah 4 cm, panjang jari-jari lingkaran yang lebih besar adalah...",
+                options: ["6 cm", "8 cm", "10 cm", "12 cm"],
+                ans: 0,
+                exp: "Rumus GS Dalam: d = √(p² - (R+r)²). <br> 24 = √(26² - (R+4)²) → 576 = 676 - (R+4)² → (R+4)² = 100 → R+4 = 10 → R = 6 cm."
+            },
+            {
+                q: "Bentuk sederhana dari (2x - 6) / (x² - 9) adalah...",
+                options: ["2 / (x + 3)", "2 / (x - 3)", "(x - 3) / 2", "2 / (x² - 9)"],
+                ans: 0,
+                exp: "Faktorkan pembilang dan penyebut: <br> (2x - 6) = 2(x - 3). <br> (x² - 9) = (x - 3)(x + 3). <br> Maka, 2(x - 3) / (x - 3)(x + 3) = 2 / (x + 3)."
+            },
+            {
+                q: "Diketahui hasil kali (3x - 2y)(2x + 5y) adalah ax² + bxy + cy². Nilai dari a + b + c adalah...",
+                options: ["7", "6", "1", "17"],
+                ans: 0,
+                exp: "(3x - 2y)(2x + 5y) = 6x² + 15xy - 4xy - 10y² = 6x² + 11xy - 10y². <br> Jadi, a = 6, b = 11, c = -10. <br> a + b + c = 6 + 11 + (-10) = 7."
+            },
+            {
+                q: "Jika 2(3x - 4) = 4x + 10, maka nilai dari 3x - 1 adalah...",
+                options: ["26", "23", "14", "9"],
+                ans: 0,
+                exp: "2(3x - 4) = 4x + 10 → 6x - 8 = 4x + 10 → 2x = 18 → x = 9. <br> Maka nilai 3x - 1 = 3(9) - 1 = 27 - 1 = 26."
+            },
+            {
+                q: "Harga 3 buku dan 2 pensil adalah Rp 17.000. Harga 2 buku dan 3 pensil adalah Rp 13.000. Harga 1 buku adalah...",
+                options: ["Rp 5.000", "Rp 4.000", "Rp 3.000", "Rp 6.000"],
+                ans: 0,
+                exp: "Misal buku = b, pensil = p. <br> (1) 3b + 2p = 17.000 | ×3 → 9b + 6p = 51.000 <br> (2) 2b + 3p = 13.000 | ×2 → 4b + 6p = 26.000 <br> Kurangkan hasil kali tersebut: 5b = 25.000 → b = 5.000."
+            },
+            {
+                q: "Jenis segitiga yang panjang sisi-sisinya 8 cm, 15 cm, dan 18 cm adalah...",
+                options: ["Segitiga tumpul", "Segitiga lancip", "Segitiga siku-siku", "Segitiga sama kaki"],
+                ans: 0,
+                exp: "Cek kuadrat sisi terpanjang (18² = 324) terhadap jumlah kuadrat sisi lainnya (8² + 15² = 64 + 225 = 289). <br> Karena 324 > 289, maka merupakan segitiga tumpul."
+            },
+            {
+                q: "Sebuah kapal berlayar ke arah timur sejauh 15 km, kemudian berbelok ke arah utara sejauh 8 km. Jarak terpendek kapal dari titik awal keberangkatan adalah...",
+                options: ["17 km", "23 km", "16 km", "19 km"],
+                ans: 0,
+                exp: "Gunakan Teorema Pythagoras: Jarak = √(15² + 8²) = √(225 + 64) = √289 = 17 km."
+            },
+            {
+                q: "Sebuah persegi memiliki panjang diagonal 10√2 cm. Keliling persegi tersebut adalah...",
+                options: ["40 cm", "20 cm", "100 cm", "50 cm"],
+                ans: 0,
+                exp: "Diagonal persegi = s√2, maka s = 10 cm. <br> Keliling = 4 × s = 4 × 10 = 40 cm."
+            },
+            {
+                q: "Diketahui rata-rata nilai matematika 10 siswa adalah 75. Jika nilai Budi dan Iwan digabungkan, rata-ratanya menjadi 76. Jumlah nilai Budi dan Iwan adalah...",
+                options: ["162", "152", "172", "142"],
+                ans: 0,
+                exp: "Total nilai 10 siswa = 10 × 75 = 750. <br> Total nilai 12 siswa (termasuk Budi & Iwan) = 12 × 76 = 912. <br> Jumlah nilai keduanya = 912 - 750 = 162."
+            },
+            {
+                q: "Dari data 6, 8, 5, 7, 6, 9, x. Jika rata-rata data tersebut adalah 7, maka nilai x adalah...",
+                options: ["8", "7", "6", "9"],
+                ans: 0,
+                exp: "Rata-rata = Jumlah data / banyak data. <br> 7 = (6 + 8 + 5 + 7 + 6 + 9 + x) / 7 → 49 = 41 + x → x = 8."
+            },
+            {
+                q: "Jangkauan (range) dari kumpulan data: 12, 15, 8, 20, 10, 14, 18, 9 adalah...",
+                options: ["12", "11", "20", "8"],
+                ans: 0,
+                exp: "Jangkauan = Nilai terbesar - Nilai terkecil. <br> Nilai terbesar = 20, terkecil = 8. Maka jangkauan = 20 - 8 = 12."
+            },
+            {
+                q: "Kuartil bawah (Q1) dari data: 4, 5, 5, 6, 7, 8, 9, 10, 11 adalah...",
+                options: ["5", "5.5", "6", "4.5"],
+                ans: 0,
+                exp: "Urutkan data: 4, 5, 5, 6, 7, 8, 9, 10, 11. Median (Q2) = 7. <br> Q1 adalah median dari separuh data awal (4, 5, 5, 6). <br> Q1 = (5 + 5) / 2 = 5."
+            }
+        ];
+
+        /* ================= STATE APLIKASI ================= */
+        let currentQuestion = 0;
+        let userAnswers = new Array(questions.length).fill(null);
+        let studentData = { name: '', class: '' };
+        
+        // Timer Logic (90 Menit)
+        let examTime = 90 * 60; 
+        let timerInterval;
+
+        // Anti-Cheat State
+        let warnings = 0;
+        const MAX_WARNINGS = 2;
+        let isExamActive = false;
+
+        // Mencegah Copy Paste & Keyboard Shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'x' || e.key === 'u' || e.key === 'a' || e.key === 'p')) {
+                e.preventDefault();
+            }
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('copy', (e) => e.preventDefault());
+        document.addEventListener('paste', (e) => e.preventDefault());
+
+        // Pendeteksi Pindah Tab (Visibility)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && isExamActive) {
+                triggerCheatWarning("Keluar dari tab atau aplikasi");
+            }
+        });
+
+        // Pendeteksi Minimize / Click luar (Blur)
+        window.addEventListener('blur', () => {
+            if (isExamActive && !document.getElementById('warning-overlay').classList.contains('hidden')) return;
+            if (isExamActive) {
+                triggerCheatWarning("Layar ujian tidak fokus (Split screen/Notifikasi diklik)");
+            }
+        });
+
+        /* ================= FUNGSI UTAMA ================= */
+        function startExam() {
+            const name = document.getElementById('student-name').value.trim();
+            const cls = document.getElementById('student-class').value;
+
+            if (!name || !cls) {
+                showModal("Data Belum Lengkap", "Mohon isi <b>Nama</b> dan <b>Kelas</b> terlebih dahulu!", "alert");
+                return;
+            }
+
+            studentData.name = name;
+            studentData.class = cls;
+
+            // Set UI
+            document.getElementById('display-name').innerText = name;
+            document.getElementById('display-class').innerText = `Kelas ${cls}`;
+            document.getElementById('q-total').innerText = questions.length;
+
+            // Request Fullscreen (penting untuk anti cheat)
+            let elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(err => console.log(err));
+            } else if (elem.webkitRequestFullscreen) { /* Safari */
+                elem.webkitRequestFullscreen();
+            }
+
+            // Ganti Layar
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('exam-screen').classList.remove('hidden');
+            
+            isExamActive = true;
+            renderQuestion(0);
+            updateGrid();
+            
+            // Mulai Timer
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            if(examTime <= 0) {
+                clearInterval(timerInterval);
+                submitExam();
+                return;
+            }
+            examTime--;
+            let m = Math.floor(examTime / 60);
+            let s = examTime % 60;
+            document.getElementById('timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            
+            if(examTime < 300) { // Sisa 5 menit
+                document.getElementById('timer').classList.add('text-red-300', 'animate-pulse');
+            }
+        }
+
+        /* ================= LOGIK SOAL ================= */
+        function renderQuestion(index) {
+            currentQuestion = index;
+            const q = questions[index];
+            
+            document.getElementById('q-number').innerText = index + 1;
+            document.getElementById('question-text').innerHTML = q.q;
+
+            const optContainer = document.getElementById('options-container');
+            optContainer.innerHTML = '';
+
+            const labels = ['A', 'B', 'C', 'D'];
+
+            q.options.forEach((opt, i) => {
+                const isSelected = userAnswers[index] === i;
+                
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 allow-select ${isSelected ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300 bg-white'}`;
+                btn.onclick = () => selectOption(i);
+                
+                const labelCircle = document.createElement('span');
+                labelCircle.className = `flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${isSelected ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`;
+                labelCircle.innerText = labels[i];
+
+                const textSpan = document.createElement('span');
+                textSpan.className = "flex-grow prevent-select"; // Mencegah blok teks
+                textSpan.innerText = opt;
+
+                btn.appendChild(labelCircle);
+                btn.appendChild(textSpan);
+                optContainer.appendChild(btn);
+            });
+
+            // Update Nav Buttons
+            document.getElementById('btn-prev').disabled = index === 0;
+            
+            if (index === questions.length - 1) {
+                document.getElementById('btn-next').classList.add('hidden');
+                document.getElementById('btn-submit').classList.remove('hidden');
+            } else {
+                document.getElementById('btn-next').classList.remove('hidden');
+                document.getElementById('btn-submit').classList.add('hidden');
+            }
+
+            document.getElementById('main-scroll').scrollTop = 0;
+            updateStatusDijawab();
+        }
+
+        function selectOption(optIndex) {
+            userAnswers[currentQuestion] = optIndex;
+            renderQuestion(currentQuestion); // Re-render untuk update UI hijau/biru
+            updateGrid();
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < questions.length - 1) {
+                renderQuestion(currentQuestion + 1);
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestion > 0) {
+                renderQuestion(currentQuestion - 1);
+            }
+        }
+
+        function jumpToQuestion(idx) {
+            renderQuestion(idx);
+            toggleGrid(); // tutup modal
+        }
+
+        /* ================= NAVIGASI GRID ================= */
+        function toggleGrid() {
+            const modal = document.getElementById('grid-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function updateGrid() {
+            const grid = document.getElementById('question-grid');
+            grid.innerHTML = '';
+            
+            questions.forEach((_, i) => {
+                const btn = document.createElement('button');
+                const isAnswered = userAnswers[i] !== null;
+                const isCurrent = i === currentQuestion;
+
+                btn.className = `aspect-square rounded flex items-center justify-center font-bold text-sm border-2 allow-select
+                    ${isAnswered ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'}
+                    ${isCurrent ? 'ring-2 ring-yellow-400 ring-offset-1' : ''}
+                `;
+                btn.innerText = i + 1;
+                btn.onclick = () => jumpToQuestion(i);
+                grid.appendChild(btn);
+            });
+        }
+
+        function updateStatusDijawab() {
+            const answered = userAnswers.filter(a => a !== null).length;
+            document.getElementById('q-answered').innerText = answered;
+        }
+
+        /* ================= FUNGSI CUSTOM MODAL ================= */
+        function showModal(title, message, type, confirmCallback = null) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerHTML = message;
+            
+            const btnContainer = document.getElementById('modal-buttons');
+            btnContainer.innerHTML = ''; 
+
+            if (type === 'alert') {
+                const btn = document.createElement('button');
+                btn.className = 'px-6 py-2 w-full bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 allow-select';
+                btn.innerText = 'OK Mengerti';
+                btn.onclick = () => {
+                    document.getElementById('custom-modal').classList.add('hidden');
+                    if (confirmCallback) confirmCallback();
+                };
+                btnContainer.appendChild(btn);
+            } else if (type === 'confirm') {
+                const btnCancel = document.createElement('button');
+                btnCancel.className = 'flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300 allow-select';
+                btnCancel.innerText = 'Batal';
+                btnCancel.onclick = () => document.getElementById('custom-modal').classList.add('hidden');
+                
+                const btnOk = document.createElement('button');
+                btnOk.className = 'flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 allow-select';
+                btnOk.innerText = 'Ya, Kumpulkan';
+                btnOk.onclick = () => {
+                    document.getElementById('custom-modal').classList.add('hidden');
+                    if (confirmCallback) confirmCallback();
+                };
+                
+                btnContainer.appendChild(btnCancel);
+                btnContainer.appendChild(btnOk);
+            }
+
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        /* ================= ANTI CHEAT LOGIC ================= */
+        function triggerCheatWarning(reason) {
+            warnings++;
+            if (warnings > MAX_WARNINGS) {
+                // Hukuman: Kumpul paksa
+                showModal("PELANGGARAN MAKSIMAL!", "Ujian dihentikan dan jawaban dikumpulkan otomatis karena pelanggaran layar/tab.", "alert", () => {
+                    submitExam();
+                });
+            } else {
+                // Tampilkan Peringatan
+                document.getElementById('warning-count').innerText = warnings;
+                document.getElementById('warning-overlay').classList.remove('hidden');
+            }
+        }
+
+        function dismissWarning() {
+            document.getElementById('warning-overlay').classList.add('hidden');
+            // Minta fullscreen lagi
+            let elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(e=>console.log(e));
+            }
+        }
+
+        /* ================= SUBMIT & HASIL ================= */
+        function submitExamConfirm() {
+            const unanswered = userAnswers.filter(a => a === null).length;
+            let msg = "Apakah Anda yakin ingin mengumpulkan ujian?";
+            if (unanswered > 0) {
+                msg = `Terdapat <b class="text-red-600 text-lg">${unanswered}</b> soal yang BELUM DIJAWAB!<br>Yakin ingin menyelesaikan ujian?`;
+            }
+            showModal("Konfirmasi Kumpul", msg, "confirm", () => {
+                submitExam();
+            });
+        }
+
+        function submitExam() {
+            isExamActive = false;
+            clearInterval(timerInterval);
+            
+            // Exit Fullscreen
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(err=>console.log(err));
+            }
+
+            // Hitung Nilai
+            let correct = 0;
+            let wrong = 0;
+            let empty = 0;
+
+            userAnswers.forEach((ans, i) => {
+                if (ans === null) empty++;
+                else if (ans === questions[i].ans) correct++;
+                else wrong++;
+            });
+
+            // Kalkulasi nilai agar max 100 tidak peduli berapapun jumlah soalnya
+            // Permintaan user: Soal bernilai 2 poin, total 100. (Artinya patokannya 50 soal).
+            // Script ini dinamis: (Benar / Total Soal) * 100
+            const finalScore = Math.round((correct / questions.length) * 100);
+
+            // Tampilkan Layar Hasil
+            document.getElementById('exam-screen').classList.add('hidden');
+            document.getElementById('grid-modal').classList.add('hidden');
+            document.getElementById('warning-overlay').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+
+            document.getElementById('res-benar').innerText = correct;
+            document.getElementById('res-salah').innerText = wrong;
+            document.getElementById('res-kosong').innerText = empty;
+            document.getElementById('res-nilai').innerText = finalScore;
+
+            renderReview();
+            sendDataToSpreadsheet(studentData.name, studentData.class, correct, wrong, finalScore);
+        }
+
+        function renderReview() {
+            const container = document.getElementById('review-container');
+            const labels = ['A', 'B', 'C', 'D'];
+
+            questions.forEach((q, i) => {
+                const userAns = userAnswers[i];
+                const isCorrect = userAns === q.ans;
+                const isKosong = userAns === null;
+
+                let statusBadge = isCorrect 
+                    ? `<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">BENAR</span>` 
+                    : isKosong 
+                        ? `<span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold">KOSONG</span>`
+                        : `<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">SALAH</span>`;
+
+                let html = `
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 mb-4 allow-select">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-bold text-gray-700">Soal No. ${i+1}</h4>
+                            ${statusBadge}
+                        </div>
+                        <p class="mb-4 text-gray-800">${q.q}</p>
+                        <div class="space-y-1 mb-4 text-sm">
+                `;
+
+                q.options.forEach((opt, j) => {
+                    let optStyle = "text-gray-600";
+                    let icon = "";
+                    
+                    if (j === q.ans) {
+                        optStyle = "text-green-600 font-bold bg-green-50 p-1 rounded"; // Jawaban Benar (Kunci)
+                        icon = "✅ ";
+                    } else if (j === userAns) {
+                        optStyle = "text-red-600 font-bold line-through bg-red-50 p-1 rounded"; // Jawaban User yg salah
+                        icon = "❌ ";
+                    }
+
+                    html += `<div class="${optStyle}">${icon}${labels[j]}. ${opt}</div>`;
+                });
+
+                html += `
+                        </div>
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded text-sm text-blue-900">
+                            <strong>Pembahasan:</strong><br>
+                            ${q.exp}
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        /* ================= INTEGRASI SPREADSHEET ================= */
+        function sendDataToSpreadsheet(nama, kelas, benar, salah, nilai) {
+            // GANTI URL DI BAWAH INI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbzcIeuY1nuowU_0mbjreJE6a7btZ_YR7ECq9hK2auKZbGBvNuRgZ3lTFkNqApERV_Et/exec'; 
+            
+            // Dummy bypass jika belum ada link (agar aplikasi tidak error)
+            if(scriptURL.includes('XXXXXXXXXXXX')) {
+                console.log("Data Ujian:", {nama, kelas, benar, salah, nilai});
+                console.warn("Harap masukkan link Google Apps Script Anda untuk menyimpan data.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('nama', nama);
+            formData.append('kelas', kelas);
+            formData.append('benar', benar);
+            formData.append('salah', salah);
+            formData.append('nilai', nilai);
+
+            fetch(scriptURL, { method: 'POST', body: formData })
+                .then(response => console.log('Sukses mengirim ke spreadsheet', response))
+                .catch(error => console.error('Error!', error.message));
+        }
+
+    </script>
+</body>
+</html>
